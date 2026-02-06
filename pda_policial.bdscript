@@ -1,0 +1,427 @@
+// ================================================
+// PDA POLICIAL PROFESIONAL - ERLC (BDScript 2)
+// Autor: NEIRON STUDIOS (adaptado por Codex)
+// Sistema 100% por slash y con almacenamiento en variables
+// ================================================
+
+// ------------------------------------------------
+// 1) COMANDO PRINCIPAL - MENÚ PDA
+// Trigger sugerido en Bot Designer:
+// /pda
+// ------------------------------------------------
+$nomention
+$ephemeral
+$title[🛡️ PDA POLICIAL | Liberty County]
+$description[
+Bienvenido a la **PDA Policial Profesional**.
+
+Selecciona una opción del menú para gestionar:
+- 💸 Multas
+- ⛓️ Arrestos
+- 📁 Antecedentes
+- 🧾 Deudas
+- 🚗 Coches registrados
+- 🚨 Búsqueda y captura
+]
+$color[#1f6feb]
+$addSelectMenu[pda_menu;1;1;Selecciona una gestión;false;
+multas:💸 Gestionar multas:💸:false;
+arrestos:⛓️ Gestionar arrestos:⛓️:false;
+antecedentes:📁 Ver/editar antecedentes:📁:false;
+deudas:🧾 Gestionar deudas:🧾:false;
+coches:🚗 Gestionar coches registrados:🚗:false;
+buscados:🚨 Gestionar búsqueda y captura:🚨:false]
+
+// ------------------------------------------------
+// 2) ROUTER DEL MENÚ PDA
+// Trigger sugerido en Bot Designer:
+// $onInteraction[selectMenu;pda_menu]
+// ------------------------------------------------
+$onlyIf[$interactionData[values[0]]!=;]
+
+$if[$interactionData[values[0]]==multas]
+$interactionReply[;{newEmbed:{title:💸 Gestión de Multas}{description:Usa:
+`/multa poner usuario:<@usuario> motivo:<texto> cantidad:<número>`
+`/multa ver usuario:<@usuario>`}{color:#2ea043}};true]
+$endif
+
+$if[$interactionData[values[0]]==arrestos]
+$interactionReply[;{newEmbed:{title:⛓️ Gestión de Arrestos}{description:Usa:
+`/arresto registrar usuario:<@usuario> motivo:<texto> minutos:<número>`
+`/arresto ver usuario:<@usuario>`}{color:#2ea043}};true]
+$endif
+
+$if[$interactionData[values[0]]==antecedentes]
+$interactionReply[;{newEmbed:{title:📁 Gestión de Antecedentes}{description:Usa:
+`/antecedente agregar usuario:<@usuario> nota:<texto>`
+`/antecedente ver usuario:<@usuario>`
+`/antecedente limpiar usuario:<@usuario>`}{color:#2ea043}};true]
+$endif
+
+$if[$interactionData[values[0]]==deudas]
+$interactionReply[;{newEmbed:{title:🧾 Gestión de Deudas}{description:Usa:
+`/deuda agregar usuario:<@usuario> concepto:<texto> cantidad:<número>`
+`/deuda pagar usuario:<@usuario> cantidad:<número>`
+`/deuda ver usuario:<@usuario>`}{color:#2ea043}};true]
+$endif
+
+$if[$interactionData[values[0]]==coches]
+$interactionReply[;{newEmbed:{title:🚗 Coches Registrados}{description:Usa:
+`/coche registrar usuario:<@usuario> placa:<texto> modelo:<texto> color:<texto>`
+`/coche ver usuario:<@usuario>`
+`/coche quitar usuario:<@usuario> placa:<texto>`}{color:#2ea043}};true]
+$endif
+
+$if[$interactionData[values[0]]==buscados]
+$interactionReply[;{newEmbed:{title:🚨 Búsqueda y Captura}{description:Usa:
+`/buscado activar usuario:<@usuario> motivo:<texto> nivel:<1-5>`
+`/buscado desactivar usuario:<@usuario>`
+`/buscado ver usuario:<@usuario>`}{color:#2ea043}};true]
+$endif
+
+// ------------------------------------------------
+// 3) MULTAS
+// Subcomando: /multa poner
+// ------------------------------------------------
+$nomention
+$onlyPerms[managemessages;❌ No tienes permiso para usar la PDA policial.]
+
+$let[target;$slashOption[usuario]]
+$let[motivo;$slashOption[motivo]]
+$let[cantidad;$slashOption[cantidad]]
+
+$setUserVar[pda_multas_total;$sum[$getUserVar[pda_multas_total;$get[target]];$get[cantidad]];$get[target]]
+$setUserVar[pda_multas_historial;$replaceText[$getUserVar[pda_multas_historial;$get[target]];none;]• $username[$authorID] - $get[cantidad]€ - $get[motivo]\n;$get[target]]
+
+$reply
+$title[✅ Multa registrada]
+$description[
+**Agente:** <@$authorID>
+**Ciudadano:** <@$get[target]>
+**Motivo:** $get[motivo]
+**Cantidad:** $get[cantidad]€
+**Total pendiente en multas:** $getUserVar[pda_multas_total;$get[target]]€
+]
+$color[#2ea043]
+
+// ------------------------------------------------
+// 4) MULTAS - VER
+// Subcomando: /multa ver
+// ------------------------------------------------
+$nomention
+$let[target;$slashOption[usuario]]
+
+$reply
+$title[💸 Expediente de Multas]
+$description[
+**Ciudadano:** <@$get[target]>
+**Total multas:** $getUserVar[pda_multas_total;$get[target]]€
+
+**Historial:**
+$replaceText[$checkCondition[$getUserVar[pda_multas_historial;$get[target]]==];true;Sin multas registradas.;false;$getUserVar[pda_multas_historial;$get[target]]]
+]
+$color[#f0883e]
+
+// ------------------------------------------------
+// 5) ARRESTOS - REGISTRAR
+// Subcomando: /arresto registrar
+// ------------------------------------------------
+$nomention
+$onlyPerms[kick;❌ No tienes permiso para registrar arrestos.]
+
+$let[target;$slashOption[usuario]]
+$let[motivo;$slashOption[motivo]]
+$let[minutos;$slashOption[minutos]]
+
+$setUserVar[pda_arrestos_total;$sum[$getUserVar[pda_arrestos_total;$get[target]];1];$get[target]]
+$setUserVar[pda_arrestos_historial;$replaceText[$getUserVar[pda_arrestos_historial;$get[target]];none;]• $username[$authorID] - $get[minutos] min - $get[motivo]\n;$get[target]]
+
+$reply
+$title[⛓️ Arresto registrado]
+$description[
+**Agente:** <@$authorID>
+**Detenido:** <@$get[target]>
+**Motivo:** $get[motivo]
+**Tiempo:** $get[minutos] minutos
+**Arrestos totales:** $getUserVar[pda_arrestos_total;$get[target]]
+]
+$color[#2ea043]
+
+// ------------------------------------------------
+// 6) ARRESTOS - VER
+// Subcomando: /arresto ver
+// ------------------------------------------------
+$nomention
+$let[target;$slashOption[usuario]]
+
+$reply
+$title[⛓️ Historial de Arrestos]
+$description[
+**Ciudadano:** <@$get[target]>
+**Arrestos totales:** $getUserVar[pda_arrestos_total;$get[target]]
+
+**Historial:**
+$replaceText[$checkCondition[$getUserVar[pda_arrestos_historial;$get[target]]==];true;Sin arrestos registrados.;false;$getUserVar[pda_arrestos_historial;$get[target]]]
+]
+$color[#f0883e]
+
+// ------------------------------------------------
+// 7) ANTECEDENTES
+// Subcomando: /antecedente agregar
+// ------------------------------------------------
+$nomention
+$onlyPerms[managemessages;❌ No tienes permiso para editar antecedentes.]
+
+$let[target;$slashOption[usuario]]
+$let[nota;$slashOption[nota]]
+
+$setUserVar[pda_antecedentes;$replaceText[$getUserVar[pda_antecedentes;$get[target]];none;]• $username[$authorID]: $get[nota]\n;$get[target]]
+
+$reply
+$title[📁 Antecedente añadido]
+$description[
+**Ciudadano:** <@$get[target]>
+**Nota registrada:** $get[nota]
+]
+$color[#2ea043]
+
+// ------------------------------------------------
+// 8) ANTECEDENTES - VER
+// Subcomando: /antecedente ver
+// ------------------------------------------------
+$nomention
+$let[target;$slashOption[usuario]]
+
+$reply
+$title[📁 Antecedentes]
+$description[
+**Ciudadano:** <@$get[target]>
+
+$replaceText[$checkCondition[$getUserVar[pda_antecedentes;$get[target]]==];true;Sin antecedentes registrados.;false;$getUserVar[pda_antecedentes;$get[target]]]
+]
+$color[#f0883e]
+
+// ------------------------------------------------
+// 9) ANTECEDENTES - LIMPIAR
+// Subcomando: /antecedente limpiar
+// ------------------------------------------------
+$nomention
+$onlyPerms[administrator;❌ Solo administradores pueden limpiar antecedentes.]
+
+$let[target;$slashOption[usuario]]
+$setUserVar[pda_antecedentes;none;$get[target]]
+
+$reply
+$title[🧹 Antecedentes limpiados]
+$description[Se ha limpiado el historial de antecedentes de <@$get[target]>.]
+$color[#2ea043]
+
+// ------------------------------------------------
+// 10) DEUDAS - AGREGAR
+// Subcomando: /deuda agregar
+// ------------------------------------------------
+$nomention
+$onlyPerms[managemessages;❌ No tienes permiso para registrar deudas.]
+
+$let[target;$slashOption[usuario]]
+$let[concepto;$slashOption[concepto]]
+$let[cantidad;$slashOption[cantidad]]
+
+$setUserVar[pda_deudas_total;$sum[$getUserVar[pda_deudas_total;$get[target]];$get[cantidad]];$get[target]]
+$setUserVar[pda_deudas_historial;$replaceText[$getUserVar[pda_deudas_historial;$get[target]];none;]• +$get[cantidad]€ ($get[concepto]) por $username[$authorID]\n;$get[target]]
+
+$reply
+$title[🧾 Deuda añadida]
+$description[
+**Ciudadano:** <@$get[target]>
+**Concepto:** $get[concepto]
+**Cantidad:** $get[cantidad]€
+**Deuda total:** $getUserVar[pda_deudas_total;$get[target]]€
+]
+$color[#2ea043]
+
+// ------------------------------------------------
+// 11) DEUDAS - PAGAR
+// Subcomando: /deuda pagar
+// ------------------------------------------------
+$nomention
+
+$let[target;$slashOption[usuario]]
+$let[cantidad;$slashOption[cantidad]]
+
+$onlyIf[$get[cantidad]>0;❌ La cantidad debe ser mayor que 0.]
+$onlyIf[$getUserVar[pda_deudas_total;$get[target]]>0;❌ Este usuario no tiene deuda pendiente.]
+
+$setUserVar[pda_deudas_total;$sub[$getUserVar[pda_deudas_total;$get[target]];$get[cantidad]];$get[target]]
+$onlyIf[$getUserVar[pda_deudas_total;$get[target]]>=0;❌ El pago supera la deuda actual.]
+$setUserVar[pda_deudas_historial;$replaceText[$getUserVar[pda_deudas_historial;$get[target]];none;]• -$get[cantidad]€ abonados\n;$get[target]]
+
+$reply
+$title[💳 Pago registrado]
+$description[
+**Ciudadano:** <@$get[target]>
+**Abono:** $get[cantidad]€
+**Deuda restante:** $getUserVar[pda_deudas_total;$get[target]]€
+]
+$color[#2ea043]
+
+// ------------------------------------------------
+// 12) DEUDAS - VER
+// Subcomando: /deuda ver
+// ------------------------------------------------
+$nomention
+$let[target;$slashOption[usuario]]
+
+$reply
+$title[🧾 Estado de Deudas]
+$description[
+**Ciudadano:** <@$get[target]>
+**Deuda total:** $getUserVar[pda_deudas_total;$get[target]]€
+
+**Historial:**
+$replaceText[$checkCondition[$getUserVar[pda_deudas_historial;$get[target]]==];true;Sin deudas registradas.;false;$getUserVar[pda_deudas_historial;$get[target]]]
+]
+$color[#f0883e]
+
+// ------------------------------------------------
+// 13) COCHES - REGISTRAR
+// Subcomando: /coche registrar
+// ------------------------------------------------
+$nomention
+$onlyPerms[managemessages;❌ No tienes permiso para registrar vehículos.]
+
+$let[target;$slashOption[usuario]]
+$let[placa;$toLowercase[$slashOption[placa]]]
+$let[modelo;$slashOption[modelo]]
+$let[colorCoche;$slashOption[color]]
+
+$setUserVar[pda_coches_registrados;$replaceText[$getUserVar[pda_coches_registrados;$get[target]];none;]• Placa: $get[placa] | Modelo: $get[modelo] | Color: $get[colorCoche]\n;$get[target]]
+
+$reply
+$title[🚗 Vehículo registrado]
+$description[
+**Propietario:** <@$get[target]>
+**Placa:** `$get[placa]`
+**Modelo:** $get[modelo]
+**Color:** $get[colorCoche]
+]
+$color[#2ea043]
+
+// ------------------------------------------------
+// 14) COCHES - VER
+// Subcomando: /coche ver
+// ------------------------------------------------
+$nomention
+$let[target;$slashOption[usuario]]
+
+$reply
+$title[🚗 Coches Registrados]
+$description[
+**Ciudadano:** <@$get[target]>
+
+$replaceText[$checkCondition[$getUserVar[pda_coches_registrados;$get[target]]==];true;No tiene vehículos registrados.;false;$getUserVar[pda_coches_registrados;$get[target]]]
+]
+$color[#f0883e]
+
+// ------------------------------------------------
+// 15) COCHES - QUITAR
+// Subcomando: /coche quitar
+// Nota: BDScript2 no tiene borrado por línea simple, aquí se marca eliminación en historial.
+// ------------------------------------------------
+$nomention
+$onlyPerms[managemessages;❌ No tienes permiso para modificar vehículos.]
+
+$let[target;$slashOption[usuario]]
+$let[placa;$toLowercase[$slashOption[placa]]]
+
+$setUserVar[pda_coches_registrados;$replaceText[$getUserVar[pda_coches_registrados;$get[target]];none;]• [ELIMINADO] Placa: $get[placa] por $username[$authorID]\n;$get[target]]
+
+$reply
+$title[🗑️ Vehículo marcado como retirado]
+$description[
+**Ciudadano:** <@$get[target]>
+**Placa retirada:** `$get[placa]`
+]
+$color[#2ea043]
+
+// ------------------------------------------------
+// 16) BÚSQUEDA Y CAPTURA - ACTIVAR
+// Subcomando: /buscado activar
+// ------------------------------------------------
+$nomention
+$onlyPerms[kick;❌ No tienes permiso para activar búsqueda y captura.]
+
+$let[target;$slashOption[usuario]]
+$let[motivo;$slashOption[motivo]]
+$let[nivel;$slashOption[nivel]]
+
+$onlyIf[$get[nivel]>=1;❌ El nivel debe estar entre 1 y 5.]
+$onlyIf[$get[nivel]<=5;❌ El nivel debe estar entre 1 y 5.]
+
+$setUserVar[pda_buscado_activo;si;$get[target]]
+$setUserVar[pda_buscado_motivo;$get[motivo];$get[target]]
+$setUserVar[pda_buscado_nivel;$get[nivel];$get[target]]
+$setUserVar[pda_buscado_por;$authorID;$get[target]]
+
+$reply
+$title[🚨 Búsqueda y captura ACTIVADA]
+$description[
+**Objetivo:** <@$get[target]>
+**Motivo:** $get[motivo]
+**Nivel de prioridad:** $get[nivel]/5
+**Emitido por:** <@$authorID>
+]
+$color[#da3633]
+
+// ------------------------------------------------
+// 17) BÚSQUEDA Y CAPTURA - DESACTIVAR
+// Subcomando: /buscado desactivar
+// ------------------------------------------------
+$nomention
+$onlyPerms[kick;❌ No tienes permiso para desactivar búsqueda y captura.]
+
+$let[target;$slashOption[usuario]]
+
+$setUserVar[pda_buscado_activo;no;$get[target]]
+$setUserVar[pda_buscado_motivo;none;$get[target]]
+$setUserVar[pda_buscado_nivel;0;$get[target]]
+$setUserVar[pda_buscado_por;0;$get[target]]
+
+$reply
+$title[✅ Búsqueda y captura DESACTIVADA]
+$description[Se retiró de búsqueda y captura a <@$get[target]>.]
+$color[#2ea043]
+
+// ------------------------------------------------
+// 18) BÚSQUEDA Y CAPTURA - VER
+// Subcomando: /buscado ver
+// ------------------------------------------------
+$nomention
+$let[target;$slashOption[usuario]]
+
+$reply
+$title[🚨 Estado de Búsqueda y Captura]
+$description[
+**Ciudadano:** <@$get[target]>
+**Activo:** $getUserVar[pda_buscado_activo;$get[target]]
+**Motivo:** $getUserVar[pda_buscado_motivo;$get[target]]
+**Nivel:** $getUserVar[pda_buscado_nivel;$get[target]]/5
+**Emitido por:** <@$getUserVar[pda_buscado_por;$get[target]]>
+]
+$color[#f0883e]
+
+// ------------------------------------------------
+// 19) VARIABLES REQUERIDAS (crear en Bot Designer)
+// ------------------------------------------------
+// pda_multas_total = 0
+// pda_multas_historial = none
+// pda_arrestos_total = 0
+// pda_arrestos_historial = none
+// pda_antecedentes = none
+// pda_deudas_total = 0
+// pda_deudas_historial = none
+// pda_coches_registrados = none
+// pda_buscado_activo = no
+// pda_buscado_motivo = none
+// pda_buscado_nivel = 0
+// pda_buscado_por = 0
